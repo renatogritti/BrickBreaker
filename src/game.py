@@ -5,7 +5,15 @@ from src.settings import *
 from src.sprites import Paddle, Ball, Brick
 
 class Game:
+    """
+    Gerencia a lógica principal do jogo Brick Breaker, incluindo inicialização,
+    loops de jogo, gerenciamento de eventos, atualizações de estado e renderização.
+    """
+
     def __init__(self):
+        """
+        Inicializa o Pygame, configura a tela, carrega sons e define os estados iniciais do jogo.
+        """
         pygame.init()
         pygame.mixer.init() # Inicializa o mixer para sons
         self.screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
@@ -29,6 +37,10 @@ class Game:
         self.reset_game()
 
     def generate_bip_sounds(self):
+        """
+        Gera e carrega os sons de "bip" para diferentes eventos do jogo (colisões, perda de vida, etc.)
+        usando a biblioteca numpy para criar as ondas sonoras.
+        """
         # Frequências e durações para os bips
         freq_brick = 440  # A4
         freq_paddle = 660 # E5
@@ -41,6 +53,14 @@ class Game:
         sample_rate = pygame.mixer.get_init()[0] # Obtém a taxa de amostragem do mixer
 
         def create_bip(frequency, duration_sec):
+            """
+            Cria um som de bip com a frequência e duração especificadas.
+            Args:
+                frequency (int): A frequência do som em Hz.
+                duration_sec (float): A duração do som em segundos.
+            Returns:
+                pygame.mixer.Sound: O objeto Sound gerado.
+            """
             num_samples = int(sample_rate * duration_sec)
             arr = np.sin(2 * np.pi * frequency * np.arange(num_samples) / sample_rate).astype(np.float32)
             # Reshape para 2D para mixer estéreo (mesmo que seja mono)
@@ -57,6 +77,9 @@ class Game:
         self.sound_level_complete = create_bip(freq_level_complete, duration * 2) # Som para fase concluída
 
     def reset_game(self):
+        """
+        Reinicia o jogo para o estado inicial, resetando pontuação, vidas, nível e recriando os elementos do jogo.
+        """
         self.game_over = False
         self.game_won = False
         self.level_complete = False # Resetar também ao reiniciar o jogo
@@ -79,6 +102,10 @@ class Game:
         self.reset_ball()
 
     def reset_ball(self):
+        """
+        Reinicia a posição e velocidade da bola, centralizando-a na raquete e ajustando a velocidade
+        com base no nível atual.
+        """
         # Remove todas as bolas existentes
         for ball in self.balls:
             ball.kill()
@@ -96,6 +123,9 @@ class Game:
         self.ball.speed_y = -(BALL_SPEED_Y + (self.level - 1))
 
     def create_bricks(self):
+        """
+        Cria os tijolos para o nível atual, incluindo tijolos especiais a partir do nível 2.
+        """
         self.bricks.empty()
         for sprite in self.all_sprites:
             if isinstance(sprite, Brick):
@@ -112,6 +142,10 @@ class Game:
                 self.bricks.add(brick)
 
     def run(self):
+        """
+        Inicia o loop principal do jogo, que inclui a splash screen, o loop de eventos,
+        atualização do estado do jogo e renderização.
+        """
         # Loop da Splash Screen
         splash_screen_active = True
         while splash_screen_active:
@@ -134,6 +168,10 @@ class Game:
         pygame.quit()
 
     def events(self):
+        """
+        Processa os eventos do Pygame, como fechar a janela, pressionar teclas para reiniciar ou sair,
+        e lançar a bola.
+        """
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 self.running = False
@@ -148,6 +186,10 @@ class Game:
                         self.ball_launched = True
 
     def update(self):
+        """
+        Atualiza o estado de todos os elementos do jogo, como a posição da raquete e da bola,
+        e verifica colisões.
+        """
         if self.game_over or self.game_won or self.level_complete:
             return
 
@@ -162,6 +204,11 @@ class Game:
             self.ball.rect.bottom = self.paddle.rect.top
 
     def check_collisions(self, ball):
+        """
+        Verifica e lida com todas as colisões da bola com as paredes, raquete e tijolos.
+        Args:
+            ball (Ball): O objeto Ball a ser verificado para colisões.
+        """
         if ball.rect.left <= 0 or ball.rect.right >= SCREEN_WIDTH:
             ball.speed_x *= -1
             self.sound_wall_hit.play()
@@ -215,6 +262,9 @@ class Game:
                     self.game_over = True
 
     def draw(self):
+        """
+        Desenha todos os elementos do jogo na tela, incluindo sprites, HUD e telas de estado do jogo.
+        """
         self.screen.fill(BLACK)
         self.all_sprites.draw(self.screen)
         self.balls.draw(self.screen) # Desenha todas as bolas
@@ -236,6 +286,9 @@ class Game:
         pygame.display.flip()
 
     def draw_game_over(self):
+        """
+        Desenha a tela de "Game Over" com a pontuação final e opções para reiniciar ou sair.
+        """
         game_over_font = pygame.font.Font(None, 72)
         restart_font = pygame.font.Font(None, 36)
         
@@ -248,6 +301,9 @@ class Game:
         self.screen.blit(restart_text, (SCREEN_WIDTH // 2 - restart_text.get_width() // 2, SCREEN_HEIGHT // 2 + 100))
 
     def draw_game_won(self):
+        """
+        Desenha a tela de "Você Venceu!" com a pontuação final e opções para reiniciar ou sair.
+        """
         game_won_font = pygame.font.Font(None, 72)
         restart_font = pygame.font.Font(None, 36)
 
@@ -260,11 +316,17 @@ class Game:
         self.screen.blit(restart_text, (SCREEN_WIDTH // 2 - restart_text.get_width() // 2, SCREEN_HEIGHT // 2 + 100))
 
     def draw_level_complete(self):
+        """
+        Desenha a tela de "Fase Concluída!" ao final de cada nível.
+        """
         level_complete_font = pygame.font.Font(None, 72)
         level_complete_text = level_complete_font.render(f"FASE {self.level - 1} CONCLUÍDA!", True, GREEN)
         self.screen.blit(level_complete_text, (SCREEN_WIDTH // 2 - level_complete_text.get_width() // 2, SCREEN_HEIGHT // 2 - 50))
 
     def draw_splash_screen(self):
+        """
+        Desenha a tela de introdução (splash screen) do jogo.
+        """
         self.screen.fill(BLACK)
         title_font = pygame.font.Font(None, 100)
         press_key_font = pygame.font.Font(None, 50)
